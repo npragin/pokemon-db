@@ -5,6 +5,8 @@
 
 -- MANIPULATION PROCEDURES
 
+-- Deletes unused customized pokemon and their moves
+-- There is no need to call this procedure manually
 DELIMITER //
 CREATE OR REPLACE PROCEDURE cleanUnusedCustomizedPokemon()
 BEGIN
@@ -23,11 +25,13 @@ BEGIN
     );
 END//
 
+-- Create a new party
 CREATE OR REPLACE PROCEDURE createParty()
 BEGIN
     INSERT INTO parties VALUES ();
 END//
 
+-- Delete a party
 CREATE OR REPLACE PROCEDURE deleteParty(IN partyId INT)
 BEGIN
     -- Delete entries from parties_has_customized_pokemon for this party
@@ -39,7 +43,9 @@ BEGIN
     CALL cleanUnusedCustomizedPokemon();
 END//
 
--- Note: When a pokemon is added to a party it is given the first available ability and nature and no moves or items |
+-- Add a pokemon to a party using a default configuration
+-- Note: When a pokemon is added to a party it is given the first available ability and nature and no moves or items
+-- Set and COALESCE were found via AI: "How can I check if an entity exists in my MDB and use it if it does, and if it doesn't create it?"
 CREATE OR REPLACE PROCEDURE addPokemonToParty(IN partyId INT, IN pokemonId INT)
 BEGIN
     -- Get the ability ID for the new pokemon
@@ -82,6 +88,7 @@ BEGIN
     VALUES (partyId, @pokemon_id_to_use);
 END//
 
+-- Remove a pokemon from a party
 CREATE OR REPLACE PROCEDURE removePokemonFromParty(IN partyId INT, IN customizedPokemonId INT)
 BEGIN
     -- Delete the pokemon from the party
@@ -91,6 +98,7 @@ BEGIN
     CALL cleanUnusedCustomizedPokemon();
 END//
 
+-- Update a pokemon's attributes
 -- Note: This is only used to update non-move pokemon attributes. Pass in the current values for attributes you do not want to update.
 CREATE OR REPLACE PROCEDURE updatePokemon(IN partyId INT, IN customizedPokemonId INT, IN abilityId INT, IN natureId INT, IN itemsId INT)
 BEGIN
@@ -174,6 +182,7 @@ BEGIN
     CALL cleanUnusedCustomizedPokemon();
 END//
 
+-- Add a move to a pokemon
 CREATE OR REPLACE PROCEDURE addMoveToPokemon(IN partyId INT, IN customizedPokemonId INT, IN moveId INT)
 BEGIN
     -- Check if the old pokemon configuration is in another party
@@ -260,6 +269,7 @@ BEGIN
     CALL cleanUnusedCustomizedPokemon();
 END//
 
+-- Remove a move from a pokemon
 CREATE OR REPLACE PROCEDURE removeMoveFromPokemon(IN partyId INT, IN customizedPokemonId INT, IN moveId INT)
 BEGIN
     -- Check if the old pokemon configuration is in another party
@@ -346,19 +356,24 @@ END//
 -- SELECT PROCEDURES
 -- Note: All procedures with a searchQuery parameter use basic fuzzy matching.
 
+-- Get all parties
 CREATE OR REPLACE PROCEDURE getParties()
 BEGIN
     SELECT parties_id AS "Party ID" FROM parties;
 END//
 
+-- Get all abilities, using fuzzy find with searchQuery
 -- Note: Use this when listing all abilities.
+-- AI was used to find the LIKE CONCAT('%', searchQuery, '%') syntax: "How can I fuzzy find in MDB?"
 CREATE OR REPLACE PROCEDURE getAbilities(IN searchQuery VARCHAR(255))
 BEGIN
     SELECT name AS "Ability Name" FROM abilities
     WHERE name LIKE CONCAT('%', searchQuery, '%');
 END//
 
+-- Get all abilities available to a specific pokemon, using fuzzy find with searchQuery
 -- Note: Use this when listing abilities available to a specific pokemon.
+-- AI was used to find the LIKE CONCAT('%', searchQuery, '%') syntax: "How can I fuzzy find in MDB?"
 CREATE OR REPLACE PROCEDURE getAbilitiesByPokemon(IN customizedPokemonId INT, IN searchQuery VARCHAR(255))
 BEGIN
     SELECT a.name AS "Ability Name"
@@ -368,24 +383,31 @@ BEGIN
     AND a.name LIKE CONCAT('%', searchQuery, '%');
 END//
 
+-- Get all items, using fuzzy find with searchQuery
+-- AI was used to find the LIKE CONCAT('%', searchQuery, '%') syntax: "How can I fuzzy find in MDB?"
 CREATE OR REPLACE PROCEDURE getItems(IN searchQuery VARCHAR(255))
 BEGIN
     SELECT name AS "Item Name", description AS "Item Description" FROM items
     WHERE name LIKE CONCAT('%', searchQuery, '%');
 END//
 
+-- Get all natures, using fuzzy find with searchQuery
+-- AI was used to find the LIKE CONCAT('%', searchQuery, '%') syntax: "How can I fuzzy find in MDB?"
 CREATE OR REPLACE PROCEDURE getNatures(IN searchQuery VARCHAR(255))
 BEGIN
     SELECT name AS "Nature Name" FROM natures
     WHERE name LIKE CONCAT('%', searchQuery, '%');
 END//
 
+-- Get all types
 -- Note: No search query supported because the user will not select a type.
 CREATE OR REPLACE PROCEDURE getTypes()
 BEGIN
     SELECT name AS "Type Name" FROM types;
 END//
 
+-- Get all pokemon, using fuzzy find with searchQuery
+-- AI was used to find the LIKE CONCAT('%', searchQuery, '%') syntax: "How can I fuzzy find in MDB?"
 CREATE OR REPLACE PROCEDURE getPokemon(IN searchQuery VARCHAR(255))
 BEGIN
     WITH ranked_types AS (
@@ -408,6 +430,7 @@ BEGIN
     GROUP BY p.pokemon_id, p.name;
 END//
 
+-- Get a specific customized pokemon's configuration
 -- Note: Use this when listing a specific customized pokemon's configuration.
 CREATE OR REPLACE PROCEDURE getCustomizedPokemonById(IN customizedPokemonId INT)
 BEGIN
@@ -451,6 +474,7 @@ BEGIN
     WHERE cp.customized_pokemon_id = customizedPokemonId;
 END//
 
+-- Get all customized pokemon configurations in a party
 -- Note: Use this when listing all customized pokemon in a party.
 CREATE OR REPLACE PROCEDURE getCustomizedPokemonByParty(IN partiesId INT)
 BEGIN
@@ -497,6 +521,7 @@ BEGIN
     WHERE phcp.parties_id = partiesId;
 END//
 
+-- Get all customized pokemon configurations
 -- Note: Use this when listing all customized pokemon.
 CREATE OR REPLACE PROCEDURE getCustomizedPokemon()
 BEGIN
@@ -538,7 +563,9 @@ BEGIN
     LEFT JOIN moves m4 ON mi.move4_id = m4.moves_id;
 END//
 
+-- Get all moves, using fuzzy find with searchQuery
 -- Note: Use this when listing all moves.
+-- AI was used to find the LIKE CONCAT('%', searchQuery, '%') syntax: "How can I fuzzy find in MDB?"
 CREATE OR REPLACE PROCEDURE getMoves(IN searchQuery VARCHAR(255))
 BEGIN
     SELECT
@@ -551,7 +578,9 @@ BEGIN
     WHERE moves.name LIKE CONCAT('%', searchQuery, '%');
 END//
 
+-- Get all moves available to a specific pokemon, using fuzzy find with searchQuery
 -- Note: Use this when listing all moves available to a specific pokemon.
+-- AI was used to find the LIKE CONCAT('%', searchQuery, '%') syntax: "How can I fuzzy find in MDB?"
 CREATE OR REPLACE PROCEDURE getMovesByPokemon(IN pokemonId INT, IN searchQuery VARCHAR(255))
 BEGIN
     SELECT
